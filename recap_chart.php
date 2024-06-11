@@ -170,7 +170,7 @@
     </script>
 
     <div class="chart-footer">
-        <p>Data Source: <a href="landing_page.html">Dyspicare</a></p>
+        <p><a href="landingpage.php">Kembali ke halaman utama</a></p>
     </div>
 </body>
 </html>
