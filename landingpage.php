@@ -75,7 +75,7 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
                                 <a class="nav-link" href="#">Apps</a>
                             </li> -->
                             <li class="nav-item">
-                                <a class="nav-link" href="#">Dashboard</a>
+                                <a class="nav-link" href="gauge_chart.php">Dashboard</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="#">History</a>
@@ -105,7 +105,7 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
                                 Dyspicare</h1>
                             <p class="para-color py-2">Dyspicare provides a progressive and affordable information system to minimize dyspepsia,
                                  which can be accessed via mobile and online for everyone.</p>
-                            <button type="button" class="btn btn-primary rounded-pill">Check Today</button>
+                            
 
                         </div>
                     </div>
@@ -281,38 +281,7 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
 
         </section>
 
-        <!-- download app section -->
-        <section class="bg-left" style="margin-top: 190px; margin-bottom: 80px;">
 
-            <div class="container ">
-                <div class="row gx-5 d-flex justify-content-center align-items-center">
-
-                    <div class="col d-flex justify-content-center align-items-center">
-
-                        <div>
-                            <h1>Download our
-                                mobile apps</h1>
-                            <hr class="h-row ">
-                            <p class="para-color py-2">Our dedicated patient engagement app and
-                                web portal allow you to access information instantaneously (no tedeous form, long calls,
-                                or administrative hassle) and securely</p>
-                            <button type="button"
-                                class=" btn btn-primary rounded-pill bg-light text-primary px-4">Download</button>
-
-
-                        </div>
-                    </div>
-
-
-                    <div class="col">
-                        <div><img class="w-100" src="images/provider-img.png" alt="">
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-        </section>
 
 
         <!-- customer say -->
@@ -577,7 +546,7 @@ if(isset($_SESSION['user_email'])) {
     $nama_pengguna = "Pengguna";
 }
 ?>
-<h1>Selamat datang, <?php echo $email; ?></h1>
+<h1> <?php echo $email; ?></h1>
 <!-- Tampilkan nama pengguna di sini -->
 
 
