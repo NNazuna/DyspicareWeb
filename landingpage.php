@@ -1,26 +1,37 @@
 <?php
-// Informasi koneksi ke database
-$host = 'localhost';
-$dbname = 'dyspicare';
-$username = 'root';
-$password = '';
+session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Membuat koneksi ke database menggunakan PDO
-try {
-    $koneksi = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-    $koneksi->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-} catch(PDOException $e) {
-    echo "Koneksi gagal: " . $e->getMessage();
-}
+include 'dbCon.php'; // Include the database connection
 
+// Mengambil email dari session
 $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
+$overallAverageScore = null;
+
+if ($email) {
+    // Mengambil user_id dari email
+    $stmtUser = $koneksi->prepare("SELECT id FROM users WHERE email = :email");
+    $stmtUser->bindParam(':email', $email, PDO::PARAM_STR);
+    $stmtUser->execute();
+    $user = $stmtUser->fetch(PDO::FETCH_ASSOC);
+    
+    if ($user) {
+        $userId = $user['id'];
+        
+        // Mengambil skor rata-rata harian user
+        $stmtScore = $koneksi->prepare("
+            SELECT AVG((pola_makan + pola_tidur + pola_minum_obat + tingkat_stress + kebersihan_pribadi + kebersihan_lingkungan) / 6) AS average_score
+            FROM daily_records 
+            WHERE user_id = :user_id
+        ");
+        $stmtScore->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmtScore->execute();
+        $scoreResult = $stmtScore->fetch(PDO::FETCH_ASSOC);
+        $overallAverageScore = $scoreResult['average_score'];
+    }
+}
 ?>
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -34,17 +45,127 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://stackpath.amazonaws.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/swiper-bundle.min.css">
     <style>
         .hidden-article {
             display: none;
         }
+        .indication {
+            font-weight: bold;
+            color: <?php echo ($indicationStatus == "Sehat") ? "green" : (($indicationStatus == "Tidak Sehat") ? "red" : "orange"); ?>;
+        }
+        .average-score {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+            margin-top: 10px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 10px;
+        }
+
+        .image-content {
+            position: relative;
+            height: 200px;
+        }
+
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            /* background: rgba(0, 0, 0, 0.5); */
+            /* border-radius: 10px; */
+            
+        }
+
+        .card-content {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .name {
+            font-size: 22px;
+            margin: 10px 0;
+        }
+
+        .description {
+            font-size: 16px;
+            color: #555;
+        }
+
+        .button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .form-container input, .form-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .form-container button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .form-container button:hover {
+            background-color: #218838;
+        }
+
+        .swiper-slide {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: auto;
+        }
+
+        .card {
+            width: 300px; /* Set width for each card */
+            margin: 10px;
+        }
+
     </style>
-     
 </head>
-
-
 
 <body>
     <header>
@@ -52,7 +173,8 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
         <section>
             <nav class="navbar navbar-expand-lg navbar-light p-3">
                 <div class="container">
-                    <a class="navbar-brand" href="#"><img src="images/dispicare.png" alt=""></a>
+                    <a class="navbar-brand" href="landingpage.php">
+                        <img src="images/dispicare.png" alt=""></a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -61,39 +183,23 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
                         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="#">Home</a>
-                            </li>
-                            <?php if ($email): ?>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="#"><?php echo htmlspecialchars($email); ?></a>
-                                </li>
-                            <?php endif; ?>
-                            <!-- <li class="nav-item">
-                                <a class="nav-link" href="#">Find Doctor</a>
-                            </li> -->
-                            <!-- <li class="nav-item">
-                                <a class="nav-link" href="#">Apps</a>
-                            </li> -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="gauge_chart.php">Dashboard</a>
+                                <a class="nav-link active" aria-current="page" href="landingpage.php">Home</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">History</a>
+                                <a class="nav-link" href="dashboard.php">Dashboard</a>
                             </li>
-                            <!-- <li class="nav-item">
-                                <a class="nav-link" href="#">Education</a>
-                            </li> -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="status.php">Status</a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="logoutbend.php">Logout</a>
-                    
-
+                            </li>
 
                         </ul>
                     </div>
                 </div>
             </nav>
         </section>
-
 
         <!-- Section Intro -->
         <section class="my-5 bg-left">
@@ -105,8 +211,9 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
                                 Dyspicare</h1>
                             <p class="para-color py-2">Dyspicare provides a progressive and affordable information system to minimize dyspepsia,
                                  which can be accessed via mobile and online for everyone.</p>
-                            
-
+                            <?php if ($overallAverageScore !== null): ?>
+                                <p class="average-score">Overall Average Score: <?php echo number_format($overallAverageScore, 2); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="col">
@@ -117,7 +224,7 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
             </div>
         </section>
     </header>
-
+    
     <main>
         <!-- our service section -->
         <section class="bg-service  d-flex flex-column justify-content-center align-items-center"
@@ -141,114 +248,54 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
             <div class="container ">
                 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 my-5">
 
-                    <!-- <div class="col">
-                        <div class="d-flex flex-column align-items-center border-card p-3">
-                            <div class="mt-5">
-                                <img src="images/card1.png" class="card-img-top w-100" alt="...">
-                            </div>
-
-                            <div class="card-body">
-                                <h5 class="card-title">Search doctor</h5>
-                                <p class="card-text para-color">Choose your doctor from thousands of specialist,
-                                    general,
-                                    and trusted hospitals</p>
-                            </div>
-                        </div>
-                    </div> -->
-                    <!-- <div class="col">
-                        <div class="d-flex flex-column align-items-center border-card p-3">
-                            <div class="mt-5">
-                                <img src="images/card2.png" class="card-img-top w-100" alt="...">
-                            </div>
-
-                            <div class="card-body">
-                                <h5 class="card-title">Online pharmacy</h5>
-                                <p class="card-text para-color">Buy your medicines with our mobile application with a
-                                    simple
-                                    delivery system</p>
-                            </div>
-                        </div>
-                    </div> -->
+                    
                     <div class="col">
-                        <div class="d-flex flex-column align-items-center border-card p-3">
-                            <div class="mt-5">
-                                <img src="images/card3.png" class="card-img-top w-100" alt="...">
+                        <a href="chatbotfend.php" class="d-block text-decoration-none">
+                            <div class="d-flex flex-column align-items-center border-card p-3 card-hover">
+                                    <div class="mt-5">
+                                        <img src="images/card3.png" class="card-img-top w-100" alt="...">
+                                    </div>
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Consultation</h5>
+                                    <p class="card-text para-color">Free consultation with our trusted doctors and get the best recommendations</p>
+                                </div>
                             </div>
+                        </a>
+                     </div>
 
-                            <div class="card-body">
-                                <a href="radar_chart.php"> Rekap data </a>
-                                <p class="card-text para-color">Melihat statistika data anda </p>
+                     <div class="col">
+                        <a href="form.php" class="d-block text-decoration-none">
+                            <div class="d-flex flex-column align-items-center border-card p-3 card-hover">
+                                    <div class="mt-5">
+                                        <img src="images/card4.png" class="card-img-top w-100" alt="...">
+                                    </div>
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Tracking</h5>
+                                    <p class="card-text para-color">Track and save your medical history and health data. You
+                                        can
+                                        access data any time anywhere.</p>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <!-- <div class="col">
-                        <div class="d-flex flex-column align-items-center border-card p-3">
-                            <div class="mt-5">
-                                <img src="images/card4.png" class="card-img-top w-100" alt="...">
-                            </div>
+                        </a>
+                     </div>
 
-                            <div class="card-body">
-                                <h5 class="card-title">Details info</h5>
-                                <p class="card-text para-color">Free consultation with our trusted doctors and get the
-                                    best
-                                    recomendations</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="d-flex flex-column align-items-center border-card p-3">
-                            <div class=" mt-5">
-                                <img src="images/card5.png" class="card-img-top w-100" alt="...">
-                            </div>
-
-                            <div class="card-body">
-                                <h5 class="card-title">Emergency care</h5>
-                                <p class="card-text para-color">You can get 24/7 urgent care for yourself or your
-                                    children
-                                    and your
-                                    lovely family.</p>
-                            </div>
-                        </div>
-                    </div> -->
-                    <div class="col">
-                        <div class="d-flex flex-column align-items-center border-card p-3">
-                            <div class="mt-5">
-                                <img src="images/card6.png" class="card-img-top w-100" alt="...">
-                            </div>
-
-                            <div class="card-body">
-                                <a href="form.php"> Tracking </a>
-                                <p class="card-text para-color">Track and save your medical history and health data. You
-                                    can
-                                    access data any time anywhere.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="d-flex flex-column align-items-center border-card p-3">
-                            <div class="mt-5">
-                                <img src="images/card6.png" class="card-img-top w-100" alt="...">
-                            </div>
-
-                            <div class="card-body">
-                                 <a href="edukasi.php"> Education </a>
-                                <p class="card-text para-color">Learn and find out more about efforts to minimize 
+                     <div class="col">
+                        <a href="edukasi.php" class="d-block text-decoration-none">
+                            <div class="d-flex flex-column align-items-center border-card p-3 card-hover">
+                                    <div class="mt-5">
+                                        <img src="images/card6.png" class="card-img-top w-100" alt="...">
+                                    </div>
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Education</h5>
+                                    <p class="card-text para-color">Learn and find out more about efforts to minimize 
                                     dyspepsia and the dangers of ignoring it.</p>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-
+                        </a>
+                     </div>
                 </div>
-                <div class="d-flex justify-content-center align-items-center ">
-                    <button type="button" class=" btn btn-primary rounded-pill bg-light text-primary px-4">Learn
-                        More</button>
-                </div>
-
 
         </section>
-
-
         <!-- leading healthcare section -->
 
         <section class="bg-left" style="margin-top: 190px; margin-bottom: 80px;">
@@ -269,8 +316,7 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
                             <p class="para-color py-2">Dyspicare provides progressive, and affordable healthcare,
                                 accessible on mobile and online for everyone. To us, it’s not just work. We take pride
                                 in the solutions we deliver</p>
-                            <button type="button" class=" btn btn-primary rounded-pill bg-light text-primary px-4">Learn
-                                More</button>
+
 
 
                         </div>
@@ -280,57 +326,6 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
             </div>
 
         </section>
-
-
-
-
-        <!-- customer say -->
-        <!-- <section class="bg-left" style="margin-top: 190px; margin-bottom: 80px;">
-
-            <div class="container text-white bg-primary p-5 border-rad">
-                <div class="d-flex flex-column justify-content-center align-items-center">
-                    <h4>What our customer are saying</h4>
-                    <hr class="h-row">
-                </div>
-
-                <div class="row gx-5 d-flex justify-content-center align-items-center">
-
-                    <div class="col d-flex justify-content-center align-items-center">
-                        <div>
-                            <img class=" rounded-circle"" src=" images/mypic.png" alt="">
-                        </div>
-                        <div class="d-flex flex-column ms-3">
-                            <h5>Md. Asaduzzaman</h5>
-                            <h6>Web Developer</h6>
-                        </div>
-                    </div>
-
-                    <div class="col">
-
-                        <p>“Our dedicated patient engagement app and
-                            web portal allow you to access information instantaneously (no tedeous form, long calls,
-                            or administrative hassle) and securely”</p>
-                    </div>
-
-                </div>
-            </div>
-            <div class="mt-3">
-                <nav aria-label="Page navigation example">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                        </li>
-                        <li class="page-item"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">Next</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-
-        </section> -->
 
         <section class="bg-left" style="margin-top: 190px; margin-bottom: 80px;">
             <div class="container text-white bg-primary p-5 border-rad">
@@ -339,86 +334,25 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
                     <hr class="h-row">
                 </div>
                 
-                <div id="testimonialCarousel" class="carousel slide" data-ride="carousel">
-                    <div class="carousel-inner">
-                        <div class="carousel-item active">
-                            <div class="row gx-5 d-flex justify-content-center align-items-center">
-                                <div class="col d-flex justify-content-center align-items-center">
-                                    <div>
-                                        <img class="rounded-circle" src="images/mypic.png" alt="">
-                                    </div>
-                                    <div class="d-flex flex-column ms-3">
-                                        <h5>Mr. Jordan Petrovski</h5>
-                                        <h6>Web Developer</h6>
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <p>“Our dedicated patient engagement app and web portal allow you to access information instantaneously (no tedeous form, long calls, or administrative hassle) and securely”</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="carousel-item">
-                            <div class="row gx-5 d-flex justify-content-center align-items-center">
-                                <div class="col d-flex justify-content-center align-items-center">
-                                    <div>
-                                        <img class="rounded-circle" src="images/mypic.png" alt="">
-                                    </div>
-                                    <div class="d-flex flex-column ms-3">
-                                        <h5>Customer 2</h5>
-                                        <h6>Profession 2</h6>
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <p>“Testimonial text for customer 2.”</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="carousel-item">
-                            <div class="row gx-5 d-flex justify-content-center align-items-center">
-                                <div class="col d-flex justify-content-center align-items-center">
-                                    <div>
-                                        <img class="rounded-circle" src="images/mypic.png" alt="">
-                                    </div>
-                                    <div class="d-flex flex-column ms-3">
-                                        <h5>Customer 3</h5>
-                                        <h6>Profession 3</h6>
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <p>“Testimonial text for customer 3.”</p>
-                                </div>
-                            </div>
-                        </div>
+                <div class="slide-container swiper">
+                    <div class="swiper-wrapper" id="cardWrapper">
+                        <!-- Initial customer reviews go here -->
                     </div>
-                    <a class="carousel-control-prev" href="#testimonialCarousel" role="button" data-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="sr-only">Previous</span>
-                    </a>
-                    <a class="carousel-control-next" href="#testimonialCarousel" role="button" data-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="sr-only">Next</span>
-                    </a>
+                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
                 </div>
-            </div>
-            <div class="mt-3">
-                <nav aria-label="Page navigation example">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item">
-                            <a class="page-link" href="#testimonialCarousel" role="button" data-slide-to="0">1</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#testimonialCarousel" role="button" data-slide-to="1">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#testimonialCarousel" role="button" data-slide-to="2">3</a>
-                        </li>
-                    </ul>
-                </nav>
+                
+               
+                <div class="form-container">
+                    <input type="text" id="name" placeholder="Name">
+                    <input type="file" id="imageFile" accept="image/*">
+                    <textarea id="description" placeholder="Description"></textarea>
+                    <button onclick="addReview()">Add Review</button>
+                </div>
             </div>
         </section>
         
-
-
 
         <!-- article section -->
         <section id="article-section" class="bg-article" style="margin-top: 190px; margin-bottom: 80px;">
@@ -518,6 +452,8 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
                 </div>
             </div>
         </section>
+
+
         <script>
             document.getElementById('view-all-btn').addEventListener('click', function () {
                 var hiddenArticles = document.querySelectorAll('.hidden-article');
@@ -527,30 +463,114 @@ $email = isset($_SESSION['email']) ? $_SESSION['email'] : '';
     
                 this.style.display = 'none';
             });
-        </script>
-        <!-- Section Intro -->
-        <!-- Isi sesuai dengan kode yang telah Anda buat -->
-        <?php
 
+            function loadReviews() {
+                const reviews = JSON.parse(localStorage.getItem('reviews')) || [];
+                const cardWrapper = document.getElementById('cardWrapper');
 
-// Langkah 4: Sertakan file koneksi dan fungsi pengambil nama pengguna
-require_once('dbCon.php');
-require_once('getnama.php');
-
-// Langkah 5: Ambil nama pengguna dan tampilkan di halaman
-if(isset($_SESSION['user_email'])) {
-    $email_pengguna = $_SESSION['user_email']; // Ganti dengan ID pengguna yang sesuai
-    $nama_pengguna = getnama($koneksi, $email_pengguna);
-} else {
-    // Sesuaikan dengan logika Anda jika session tidak ada
-    $nama_pengguna = "Pengguna";
+            reviews.forEach(review => {
+                const card = document.createElement('div');
+                card.classList.add('card', 'swiper-slide');
+                card.innerHTML = `
+            <div class="image-content">
+                <span class="overlay"></span>
+                <div class="card-image">
+                    <img src="${review.imageUrl}" alt="" class="card-img">
+                </div>
+            </div>
+            <div class="card-content">
+                <h2 class="name">${review.name}</h2>
+                <p class="description">${review.description}</p>
+                <button class="button" onclick="removeReview(this)">Remove</button>
+            </div>
+        `;
+        cardWrapper.appendChild(card);
+    });
 }
-?>
-<h1> <?php echo $email; ?></h1>
-<!-- Tampilkan nama pengguna di sini -->
 
+        function saveReviews(reviews) {
+            localStorage.setItem('reviews', JSON.stringify(reviews));
+        }
 
+        function addReview() {
+            const name = document.getElementById('name').value;
+            const imageFile = document.getElementById('imageFile').files[0];
+            const description = document.getElementById('description').value;
+
+            if (name && imageFile && description) {
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+                    const imageUrl = event.target.result;
+                    const reviews = JSON.parse(localStorage.getItem('reviews')) || [];
+
+                    const newReview = { name, imageUrl, description };
+                    reviews.push(newReview);
+                    saveReviews(reviews);
+
+                    const cardWrapper = document.getElementById('cardWrapper');
+
+                    const card = document.createElement('div');
+                    card.classList.add('card', 'swiper-slide');
+
+                    card.innerHTML = `
+                        <div class="image-content">
+                            <span class="overlay"></span>
+                            <div class="card-image">
+                                <img src="${imageUrl}" alt="" class="card-img">
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h2 class="name">${name}</h2>
+                            <p class="description">${description}</p>
+                            <button class="button" onclick="removeReview(this)">Remove</button>
+                        </div>
+                    `;
+
+                    cardWrapper.appendChild(card);
+
+                    document.getElementById('name').value = '';
+                    document.getElementById('imageFile').value = '';
+                    document.getElementById('description').value = '';
+                };
+
+                reader.readAsDataURL(imageFile);
+            } else {
+                alert('Please fill in all fields');
+            }
+        }
+
+        function removeReview(button) {
+            const card = button.closest('.card');
+            const name = card.querySelector('.name').textContent;
+            const reviews = JSON.parse(localStorage.getItem('reviews')) || [];
+
+            const updatedReviews = reviews.filter(review => review.name !== name);
+            saveReviews(updatedReviews);
+
+            card.remove();
+        }
+
+        window.onload = function() {
+            loadReviews();
+
+            // Initialize Swiper
+            var swiper = new Swiper('.swiper', {
+                slidesPerView: 3,
+                spaceBetween: 30,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+            });
+        }
+        </script>
     </main>
+
     <footer class="bg-primary text-white" style="margin-top: 190px;">
         <div class="container d-flex">
             <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 gx-5 p-5">
@@ -558,7 +578,7 @@ if(isset($_SESSION['user_email'])) {
                     <div><img class="mb-3" src="images/dispicare - Copy.png" alt=""></div>
                     <p>Dyspicare provides progressive, and affordable healthcare, accessible on mobile and online
                         for everyone</p>
-                    <p>©Dyspicare PTY LTD 2020. All rights reserved</p>
+                    <p>©Dyspicare PTY LTD 2024. All rights reserved</p>
                 </div>
 
                 <div class="d-flex flex-column">
@@ -587,28 +607,8 @@ if(isset($_SESSION['user_email'])) {
         </div>
 
     </footer>
-    <iframe
-src="https://www.chatbase.co/chatbot-iframe/FXk3tkbJks6A19_6Bff7Y"
-title="Chatbot"
-width="100%"
-style="height: 100%; min-height: 700px"
-frameborder="0"
-></iframe>
-
-    <script src="js/bootstrap.bundle.min.js"></script>
-    <script>
-        window.embeddedChatbotConfig = {
-        chatbotId: "FXk3tkbJks6A19_6Bff7Y",
-        domain: "www.chatbase.co"
-        }
-        </script>
-        <script
-        src="https://www.chatbase.co/embed.min.js"
-        chatbotId="FXk3tkbJks6A19_6Bff7Y"
-        domain="www.chatbase.co"
-        defer>
-        </script>
+      
 </body>
-</body>
-
+<script src= "js/swiper-bundle.min.js"></script>
+<script src="review.js"></script>
 </html>

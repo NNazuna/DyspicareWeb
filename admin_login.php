@@ -1,9 +1,46 @@
+<?php
+session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+include 'dbCon.php'; // Include the database connection
+
+$message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
+
+    if (!empty($email) && !empty($password)) {
+        $stmt = $conn->prepare("SELECT id, password FROM admins WHERE email = :email");
+        $stmt->bindValue(':email', $email);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (password_verify($password, $admin['password'])) {
+                $_SESSION['admin_id'] = $admin['id'];
+                header("Location: admin_dashboard.php");
+                exit();
+            } else {
+                $message = "Invalid email or password.";
+            }
+        } else {
+            $message = "Invalid email or password.";
+        }
+    } else {
+        $message = "Please fill in both fields.";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Healthcare Information System Dyspicare</title>
+    <title>Login Admin - Healthcare Information System Dyspicare</title>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
@@ -32,16 +69,15 @@
             height: 80px;
         }
 
-        .register-container {
+        .login-container {
             background: #ffffff;
             padding: 60px 40px;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             animation: fadeIn 1.2s ease-in-out;
             text-align: center;
-            max-width: 600px;
+            max-width: 500px;
             width: 100%;
-            margin-bottom: 50px;
         }
 
         @keyframes fadeIn {
@@ -55,7 +91,7 @@
             }
         }
 
-        .register-container h2 {
+        .login-container h2 {
             margin-bottom: 30px;
             font-weight: 700;
             color: #333;
@@ -98,6 +134,10 @@
             background-color: #76a7d9;
         }
 
+        .alert {
+            margin-top: 20px;
+        }
+
         footer {
             position: absolute;
             bottom: 0;
@@ -106,10 +146,6 @@
             padding: 10px;
             background: rgba(0, 0, 0, 0.1);
             color: #fff;
-        }
-
-        .navbar-brand img {
-            height: 50px;
         }
     </style>
 </head>
@@ -122,15 +158,11 @@
     </header>
 
     <main>
-        <!-- Section Register Form -->
+        <!-- Section Login Form -->
         <div class="container">
-            <div class="register-container">
-                <h2>Register</h2>
-                <form action="registerbend.php" method="post">
-                    <div class="form-group">
-                        <label for="nama">Nama:</label>
-                        <input type="text" class="form-control" id="nama" name="nama" required>
-                    </div>
+            <div class="login-container">
+                <h2>Login Admin</h2>
+                <form action="admin_login.php" method="post">
                     <div class="form-group">
                         <label for="email">Email:</label>
                         <input type="email" class="form-control" id="email" name="email" required>
@@ -139,15 +171,19 @@
                         <label for="password">Password:</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
-                    <button type="submit" class="btn btn-primary mt-3">Register</button>
-                    <a href="login.php" class="btn btn-secondary mt-3">Kembali ke Login</a>
+                    <button type="submit" class="btn btn-primary mt-3">Login</button>
+                    <!-- Back to User Login -->
+                    <a href="login.php" class="btn btn-secondary mt-3">Back</a>
                 </form>
+                <?php if (!empty($message)): ?>
+                    <div class="alert alert-danger mt-3"><?php echo $message; ?></div>
+                <?php endif; ?>
             </div>
         </div>
     </main>
 
     <footer>
-        <p>©Dyspicare PTY LTD 2020. All rights reserved</p>
+        <p>©Dyspicare PTY LTD 2024. All rights reserved</p>
     </footer>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

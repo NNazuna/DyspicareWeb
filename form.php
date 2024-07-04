@@ -4,13 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulir Dyspicare</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             font-family: "Mulish", sans-serif;
-            background-color: #f8f9fa;
             margin: 0;
             padding: 20px;
+            background-image: url('images/article-bg.png'), url('images/article-bg2.png'), url('images/article-bg2.png');
+            background-size: 80% 80%, 17% 17%, 17% 17%;
+            background-position: right 20%, left 80%, right 97%;
+            background-repeat: no-repeat, no-repeat;
         }
 
         form {
@@ -18,8 +23,14 @@
             margin: 0 auto;
             padding: 20px;
             border-radius: 20px;
-            box-shadow: 5px 5px 10px gray;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
             background-color: white;
+            transition: all 0.3s ease;
+            opacity: 0.95; 
+        }
+
+        form:hover {
+            box-shadow: 5px 5px 25px rgba(0,0,0,0.2);
         }
 
         form div {
@@ -28,8 +39,9 @@
 
         label {
             display: block;
-            font-weight: 500;
+            font-weight: 700;
             margin-bottom: 5px;
+            color: #495057;
         }
 
         input[type="number"],
@@ -40,31 +52,74 @@
             border: 1px solid #ced4da;
             border-radius: 10px;
             box-sizing: border-box;
+            transition: border 0.3s ease, box-shadow 0.3s ease;
         }
 
-        button[type="submit"] {
-            width: 100%;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.5);
+            outline: none;
         }
 
-        button[type="submit"]:hover {
+        button[type="submit"],
+        button[type="submit"]:hover,
+        .back-button:hover {
             background-color: #0056b3;
         }
 
         h1 {
             text-align: center;
             color: #343a40;
+            margin-bottom: 20px;
         }
+
+        .image-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        .back-button-container {
+    width: 60%;
+    max-width: 800px;
+    margin: 20px auto;
+    text-align: left;
+}
+
+.back-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 1rem;
+    cursor: pointer;
+    position: absolute;
+    top: 20px; /* Atur jarak dari atas */
+    right: 20px; /* Atur jarak dari kanan */
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}
+
     </style>
 </head>
 <body>
+<div class="back-button-container">
+        <a href="landingpage.php" class="back-button">Home</a>
+    </div>
+    <div class="image-container">
+        <img src="images/dispicare.png" alt="Dispicare Logo">
+    </div>
     <h1>Formulir Dyspicare</h1>
     <form action="formbend.php" method="post">
         <div>
@@ -120,7 +175,6 @@
                 <option value="jus">Jus Buah</option>
                 <option value="air_mineral">Air Mineral</option>
                 <option value="teh">Teh</option>
-                <option value="lainnya">Lainnya</option>
             </select>
         </div>
         <div>
@@ -149,5 +203,6 @@
         </div>
         <button type="submit">Submit</button>
     </form>
+    
 </body>
 </html>

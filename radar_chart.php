@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radar Chart</title>
+    <title>Detail</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -36,7 +36,7 @@
             left: 20px;
         }
 
-        .back-btn a {
+        .back-btn a, .additional-links a {
             text-decoration: none;
             color: #007bff;
             font-weight: bold;
@@ -44,9 +44,10 @@
             padding: 10px 20px;
             border-radius: 10px;
             transition: background-color 0.3s, color 0.3s;
+            margin-right: 10px;
         }
 
-        .back-btn a:hover {
+        .back-btn a:hover, .additional-links a:hover {
             background-color: #007bff;
             color: #ffffff;
         }
@@ -79,13 +80,17 @@
         .chart-box canvas {
             max-width: 100%;
         }
+
+        .additional-links {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="back-btn">
-        <a href="landingpage.php">Kembali</a>
-    </div>
-    <h1>Radar Chart of Health Indicators</h1>
+
+    <h1>Detail</h1>
     <div class="chart-container">
         <div class="date-selector">
             <label for="selectDate">Pilih Tanggal: </label>
@@ -101,35 +106,35 @@
         let radarChart;
 
         function getSummaryMessage(values) {
-            let messages = [];
-            if (values.every(value => value === 3)) {
-                messages.push("Semua indikator kesehatan Anda sangat baik. Terus pertahankan!");
+            const allIndicatorsGood = values.every(value => value === 3);
+            if (allIndicatorsGood) {
+                return "Seluruh data Anda sudah sangat baik, pertahankan!";
             } else {
-                if (values[0] === 3) messages.push("Pola makan Anda sangat baik.");
-                else messages.push("Cobalah untuk memperbaiki pola makan Anda.");
+                let suggestions = [];
+                if (values[0] < 3) suggestions.push("Cobalah lebih sering makan makanan sehat.");
+                if (values[1] < 3) suggestions.push("Cobalah terapkan tidur 7-8 jam untuk hasil lebih maksimal.");
+                if (values[2] < 3) suggestions.push("Cobalah lebih sering minum obat sesuai aturan.");
+                if (values[3] < 3) suggestions.push("Cobalah makan makanan yang lebih bergizi.");
+                if (values[4] < 3) suggestions.push("Cobalah lebih sering minum air putih.");
+                if (values[5] < 3) suggestions.push("Kurangi tingkat stress dengan aktivitas menyenangkan.");
+                if (values[6] < 3) suggestions.push("Tingkatkan kebersihan pribadi.");
+                if (values[7] < 3) suggestions.push("Jaga kebersihan lingkungan sekitar.");
 
-                if (values[1] === 3) messages.push("Pola tidur Anda sangat baik.");
-                else messages.push("Cobalah untuk memperbaiki pola tidur Anda.");
-
-                if (values[2] === 3) messages.push("Anda rutin minum obat dengan baik.");
-                else messages.push("Cobalah untuk lebih rutin dalam minum obat.");
-
-                if (values[3] === 3) messages.push("Jenis makanan yang Anda konsumsi sangat baik.");
-                else messages.push("Cobalah untuk mengkonsumsi makanan yang lebih sehat.");
-
-                if (values[4] === 3) messages.push("Jenis minuman yang Anda konsumsi sangat baik.");
-                else messages.push("Cobalah untuk mengkonsumsi minuman yang lebih sehat.");
-
-                if (values[5] === 3) messages.push("Tingkat stress Anda sangat baik.");
-                else messages.push("Cobalah untuk mengurangi tingkat stress Anda.");
-
-                if (values[6] === 3) messages.push("Kebersihan pribadi Anda sangat baik.");
-                else messages.push("Cobalah untuk memperbaiki kebersihan pribadi Anda.");
-
-                if (values[7] === 3) messages.push("Kebersihan lingkungan Anda sangat baik.");
-                else messages.push("Cobalah untuk memperbaiki kebersihan lingkungan Anda.");
+                return suggestions.join(" ");
             }
-            return messages.join(" ");
+        }
+
+        function convertScoreToText(score) {
+            switch (score) {
+                case 3:
+                    return 'sangat baik';
+                case 2:
+                    return 'baik';
+                case 1:
+                    return 'kurang';
+                default:
+                    return 'tidak diketahui';
+            }
         }
 
         document.getElementById('selectDate').addEventListener('change', function() {
@@ -176,10 +181,20 @@
                             }]
                         },
                         options: {
-                            scale: {
-                                ticks: {
+                            scales: {
+                                r: {
                                     beginAtZero: true,
-                                    max: 3
+                                    min: 0,
+                                    max: 3,
+                                    ticks: {
+                                        stepSize: 1,
+                                        callback: function(value) {
+                                            if (value === 1) return 'Kurang';
+                                            if (value === 2) return 'Baik';
+                                            if (value === 3) return 'Sangat Baik';
+                                            return value;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -189,14 +204,6 @@
                     const summaryMessage = getSummaryMessage(values);
                     const summaryText = `
                         <p>Tanggal: ${selectedDate}</p>
-                        <p>Pola Makan: ${data.pola_makan}</p>
-                        <p>Pola Tidur: ${data.pola_tidur}</p>
-                        <p>Pola Minum Obat: ${data.pola_minum_obat}</p>
-                        <p>Jenis Makanan: ${data.jenis_makanan}</p>
-                        <p>Jenis Minuman: ${data.jenis_minuman}</p>
-                        <p>Tingkat Stress: ${data.tingkat_stress}</p>
-                        <p>Kebersihan Pribadi: ${data.kebersihan_pribadi}</p>
-                        <p>Kebersihan Lingkungan: ${data.kebersihan_lingkungan}</p>
                         <p><strong>${summaryMessage}</strong></p>
                     `;
                     document.getElementById('summaryContainer').innerHTML = summaryText;
@@ -207,9 +214,5 @@
         // Trigger initial data load
         document.getElementById('selectDate').dispatchEvent(new Event('change'));
     </script>
-
-    <div class="chart-footer">
-        <p>Data Source: <a href="recap_chart.php">Dyspicare</a></p>
-    </div>
 </body>
 </html>

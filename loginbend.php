@@ -7,15 +7,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
 
     try {
-        $sql = "SELECT id, password FROM users WHERE email = :email";
+        $sql = "SELECT id, password, nama FROM users WHERE email = :email";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':email', $email);
         $stmt->execute();
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && password_verify($password, $user['password'])) {
-            // Set user ID to session
-            $_SESSION['users_id'] = $user['id'];
+        // Jika password tidak di-hash
+        if ($user && $password === $user['password']) {
+            // Set user ID and name to session
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_name'] = $user['nama'];
             header("Location: landingpage.php");
             exit();
         } else {

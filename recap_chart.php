@@ -20,8 +20,8 @@
         }
 
         .chart-box {
-            width: 80%;
-            max-width: 1000px;
+            width: 100%;
+            max-width: 800px;
             margin: 20px;
         }
 
@@ -29,6 +29,27 @@
             text-align: center;
             color: #343a40;
             margin-bottom: 20px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        .back-btn a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+            border: 2px solid #007bff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .back-btn a:hover {
+            background-color: #007bff;
+            color: #ffffff;
         }
 
         .summary-container {
@@ -51,16 +72,12 @@
             font-size: 1.1em;
             color: #343a40;
         }
-
-        .chart-box canvas {
-            max-width: 100%;
-        }
     </style>
 </head>
 <body>
-<div class="back-btn">
-        <a href="landingpage.php">Kembali</a>
-    </div>
+    <!-- <div class="back-btn">
+        <a href="gauge.php">Kembali</a>
+    </div> -->
     <h1>Recap 7 Days Chart</h1>
     <div class="chart-container">
         <div class="chart-box">
@@ -70,107 +87,94 @@
     </div>
 
     <script>
-        fetch('recap_data.php')
-            .then(response => response.json())
-            .then(data => {
-                console.log(data); // Debug: Periksa data yang diterima dari backend
+async function fetchData() {
+    const response = await fetch('recap_data.php');
+    const data = await response.json();
 
-                if (data.error) {
-                    document.getElementById('summaryContainer').innerText = data.error;
-                    return;
+    if (data.error) {
+        document.getElementById('summaryContainer').innerText = data.error;
+        return;
+    }
+
+    const labels = [];
+    const averageScores = [];
+
+    data.forEach(record => {
+        labels.push(record.tanggal);
+        averageScores.push(record.average_score);
+    });
+
+    const ctx = document.getElementById('lineChart').getContext('2d');
+    const lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels.slice(-7), // Show only the last 7 dates
+            datasets: [
+                {
+                    label: 'Average Score',
+                    data: averageScores.slice(-7), // Show only the last 7 scores
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false
                 }
-
-                const labels = data.map(record => record.tanggal);
-                const datasets = [
-                    {
-                        label: 'Pola Makan',
-                        data: data.map(record => record.pola_makan),
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        fill: false
-                    },
-                    {
-                        label: 'Pola Tidur',
-                        data: data.map(record => record.pola_tidur),
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        fill: false
-                    },
-                    {
-                        label: 'Pola Minum Obat',
-                        data: data.map(record => record.pola_minum_obat),
-                        borderColor: 'rgba(255, 206, 86, 1)',
-                        fill: false
-                    },
-                    {
-                        label: 'Jenis Makanan',
-                        data: data.map(record => record.jenis_makanan),
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        fill: false
-                    },
-                    {
-                        label: 'Jenis Minuman',
-                        data: data.map(record => record.jenis_minuman),
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        fill: false
-                    },
-                    {
-                        label: 'Tingkat Stress',
-                        data: data.map(record => record.tingkat_stress),
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        fill: false
-                    },
-                    {
-                        label: 'Kebersihan Pribadi',
-                        data: data.map(record => record.kebersihan_pribadi),
-                        borderColor: 'rgba(75, 192, 192, 0.7)',
-                        fill: false
-                    },
-                    {
-                        label: 'Kebersihan Lingkungan',
-                        data: data.map(record => record.kebersihan_lingkungan),
-                        borderColor: 'rgba(54, 162, 235, 0.7)',
-                        fill: false
-                    }
-                ];
-
-                const ctx = document.getElementById('lineChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: datasets
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 3
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 3,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            if (value === 3) {
+                                return 'Sangat Baik';
+                            } else if (value === 2) {
+                                return 'Baik';
+                            } else if (value === 1) {
+                                return 'Kurang';
+                            } else {
+                                return ''; // Empty string for other values
                             }
-                        }
+                        },
+                        stepSize: 1  // Adjusted to show only "Sangat Baik", "Baik", and "Kurang"
                     }
-                });
+                }
+            },
+            elements: {
+                point: {
+                    radius: 3,
+                    hoverRadius: 5
+                }
+            }
+        }
+    });
 
-                // Generate summary text based on the values
-                let summaryMessage = "Rekapitulasi 7 hari terakhir menunjukkan bahwa ";
-                const indicators = ['Pola Makan', 'Pola Tidur', 'Pola Minum Obat', 'Jenis Makanan', 'Jenis Minuman', 'Tingkat Stress', 'Kebersihan Pribadi', 'Kebersihan Lingkungan'];
-                let overallGood = true;
+    const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const avgOverall = avg(averageScores.slice(-7)).toFixed(2);
 
-                indicators.forEach((indicator, index) => {
-                    const avgScore = data.reduce((sum, record) => sum + record[datasets[index].label.toLowerCase().replace(' ', '_')], 0) / data.length;
-                    summaryMessage += `${indicator} rata-rata adalah ${avgScore.toFixed(2)}. `;
-                    if (avgScore < 2.5) {
-                        overallGood = false;
-                    }
-                });
+    let healthIndicator;
+    if (avgOverall > 2.5) {
+        healthIndicator = "sangat baik";
+    } else if (avgOverall >= 2) {
+        healthIndicator = "baik";
+    } else {
+        healthIndicator = "kurang baik";
+    }
 
-                summaryMessage += overallGood ? "Secara keseluruhan, indikator kesehatan Anda sangat baik." : "Anda perlu memperbaiki beberapa aspek kesehatan Anda.";
+    const summaryText = `
+        <p>Rekapitulasi 7 hari terakhir menunjukkan bahwa skor rata-rata Anda adalah ${healthIndicator}. 
+        
+    `;
+    document.getElementById('summaryContainer').innerHTML = summaryText;
+}
 
-                document.getElementById('summaryContainer').innerHTML = `<p><strong>${summaryMessage}</strong></p>`;
-            })
-            .catch(error => console.error('Error:', error));
+fetchData();
+
+
+
     </script>
 
     <div class="chart-footer">
-        <p><a href="landingpage.php">Kembali ke halaman utama</a></p>
+        <p>Jika Anda masih memiliki pertanyaan terkait maag,Silahkan klik <a href="chatbotfend.php">disini</a></p>
     </div>
 </body>
 </html>
